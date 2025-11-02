@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>راحتي - مساعد جراحة الوجه والفكين لما بعد العمليات</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent body scrolling */
+        }
+        .chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .message-bubble {
+            max-width: 90%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .user-message {
+            background-color: #2563eb; /* Blue-600 */
+            color: white;
+            align-self: flex-end;
+            border-bottom-left-radius: 0.25rem;
+        }
+        .ai-message {
+            background-color: #ffffff; /* White/Light Background */
+            color: #1f2937; /* Gray-800 */
+            align-self: flex-start;
+            border: 1px solid #e5e7eb;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .ai-icon {
+            font-size: 1.25rem;
+            color: #059669; /* Green-600 */
+        }
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="bg-white shadow-md p-4 sticky top-0 z-10">
+        <div class="flex items-center justify-between">
+            <!-- QR Button -->
+            <button id="qr-button" class="text-sky-600 hover:text-sky-800 transition duration-150 p-2 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><path d="M7 14v.01"></path><path d="M17 7v.01"></path><path d="M17 17v.01"></path><path d="M7 7v.01"></path><path d="M12 17h.01"></path><path d="M14 12h.01"></path><path d="M19 12h.01"></path></svg>
+            </button>
+            
+            <!-- Title -->
+            <div class="flex flex-col items-center">
+                <h1 class="text-xl font-bold text-gray-900 flex items-center justify-center">
+                    <svg class="ai-icon w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 7.292 4 4 0 010-7.292z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a7 7 0 01-7 7H5a7 7 0 017-7zM12 11a7 7 0 01-7 7H5a7 7 0 017-7z"></path></svg>
+                    راحتي - مساعد التعافي
+                </h1>
+                <p class="text-xs text-center text-gray-500 mt-1">
+                    لإرشادات ما بعد جراحة الفم والوجه والفكين
+                </p>
+            </div>
+            
+            <!-- Placeholder for alignment -->
+            <div class="w-10"></div>
+        </div>
+    </header>
+
+    <!-- Chat Area -->
+    <div id="chat-container" class="chat-container">
+        <!-- Initial Welcome Message -->
+        <div class="flex flex-col items-start">
+            <div class="ai-message message-bubble">
+                <p>أهلاً بك في نظام التواصل التابع لعيادة **الدكتور مشاري الغامدي**.</p>
+                <p>أنا مساعدك الافتراضي **راحتي**. أرجو أن تسألني عن أي تعليمات أو استفسارات لديك حول فترة التعافي ما بعد الجراحة.</p>
+                <p class="text-sm text-gray-400 mt-1">
+                    **تنبيه هام:** للحالات الطارئة، يرجى الاتصال بمركز الاتصال الموحد: **٩٢٠٠٢٢٢٣١**. إذا استمر الألم لأكثر من ثلاثة أيام يرجى مراجعة عيادة **٣١٤** في الدور **السادس** من المبنى رقم **٢** بمجمع الدمام الطبي.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="p-4 bg-white border-t border-gray-200 sticky bottom-0 z-10">
+        <form id="chat-form" class="flex gap-2">
+            <input type="text" id="user-input" placeholder="اكتب سؤالك هنا... (عن الألم، التورم، الأكل، إلخ)"
+                   class="flex-grow p-3 border border-gray-300 rounded-xl focus:ring-sky-500 focus:border-sky-500 transition duration-150"
+                   autocomplete="off" required>
+            <button type="submit" id="send-button"
+                    class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-6 rounded-xl transition duration-150 shadow-lg flex items-center justify-center disabled:opacity-50"
+                    disabled>
+                    <svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-4 5l4-5m-4-5l4 5"></path></svg>
+                    <svg id="loading-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+            </button>
+        </form>
+    </div>
+
+    <!-- QR Code Modal (Hidden by Default) -->
+    <div id="qr-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">رمز QR للوصول السريع</h3>
+            <div id="qrcode-container" class="flex justify-center p-4 bg-gray-50 rounded-lg">
+                <!-- QR Code will be drawn here -->
+                <div id="qrcode" class="p-2 bg-white rounded-lg"></div>
+            </div>
+            <p class="text-sm text-gray-600 mt-4">
+                امسح هذا الرمز للوصول إلى المساعد الآلي **راحتي**.
+            </p>
+            <button id="close-qr-modal" 
+                    class="mt-6 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-xl transition duration-150">
+                إغلاق
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Configuration (Mandatory Variables)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Firebase & Auth Setup ---
+        let db;
+        let auth;
+        let userId = null;
+
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatContainer = document.getElementById('chat-container');
+        const sendButton = document.getElementById('send-button');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const sendIcon = document.getElementById('send-icon');
+        const qrButton = document.getElementById('qr-button');
+        const qrModalOverlay = document.getElementById('qr-modal-overlay');
+        const closeQrModal = document.getElementById('close-qr-modal');
+
+        let isAuthReady = false;
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            setLogLevel('Debug');
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                } else {
+                    userId = crypto.randomUUID(); // Fallback for unauthenticated state
+                }
+                isAuthReady = true;
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                console.log("Authentication ready. User ID:", userId);
+            });
+
+            // Attempt sign-in
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken).catch(e => {
+                    console.error("Custom token sign-in failed, falling back to anonymous:", e);
+                    signInAnonymously(auth);
+                });
+            } else {
+                signInAnonymously(auth);
+            }
+        } else {
+            console.error("Firebase configuration is missing.");
+            userInput.disabled = false;
+            sendButton.disabled = false; // Allow usage without persistence
+            isAuthReady = true;
+        }
+
+        // --- Chat UI Helper Functions ---
+
+        const addMessage = (text, sender) => {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.classList.add('flex', 'flex-col', sender === 'user' ? 'items-end' : 'items-start');
+
+            const messageBubble = document.createElement('div');
+            messageBubble.classList.add('message-bubble', sender === 'user' ? 'user-message' : 'ai-message');
+
+            // Use innerHTML for Markdown to simple HTML conversion (basic links/bolding)
+            const formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+
+            messageBubble.innerHTML = formattedText;
+            messageWrapper.appendChild(messageBubble);
+            chatContainer.appendChild(messageWrapper);
+
+            // Scroll to the bottom of the chat container
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        };
+
+        const toggleLoading = (isLoading) => {
+            userInput.disabled = isLoading;
+            sendButton.disabled = isLoading || !isAuthReady;
+            loadingSpinner.classList.toggle('hidden', !isLoading);
+            sendIcon.classList.toggle('hidden', isLoading);
+            sendButton.classList.toggle('bg-sky-600', !isLoading);
+            sendButton.classList.toggle('bg-gray-400', isLoading);
+        };
+
+        // --- Gemini API Logic ---
+
+        const systemInstruction = "أنت مساعد جراحة الوجه والفكين لما بعد العمليات اسمه 'راحتي'، تتمتع بمعرفة عالية وتعاطف كبير وتركيز على السلامة، وتعمل لصالح عيادة الدكتور مشاري الغامدي، أخصائي جراحة الفم والوجه والفكين المرخص من الهيئة السعودية للاختصاصات الصحية. هدفك الوحيد هو تقديم تعليمات واضحة وبسيطة وداعمة وإجابات على أسئلة المرضى حول تعافيهم. يجب أن تكون جميع ردودك باللغة العربية الفصحى الواضحة والقياسية. أعطِ الأولوية دائمًا لسلامة المريض. لأي أعراض خطيرة أو عاجلة (مثل ارتفاع درجة الحرارة فوق 38.5 درجة مئوية، نزيف أحمر فاتح لا يمكن السيطرة عليه، ألم شديد مفاجئ، أو صعوبة في التنفس/البلع)، يجب أن تنصح المستخدم بشكل صريح بالاتصال الفوري بمركز الاتصال الموحد على الرقم **٩٢٠٠٢٢٢٣١** أو خدمات الطوارئ. في حال استمرار الألم لأكثر من ثلاثة أيام دون أعراض خطيرة، انصح المريض بمراجعة عيادة **٣١٤** في الدور **السادس** من المبنى رقم **٢** بمجمع الدمام الطبي. يجب الإشارة إلى أن الدكتور مختص ومرخص من الهيئة السعودية للاختصاصات الصحية. غطِ مواضيع ما بعد الجراحة الرئيسية مثل النزيف، التورم، النظام الغذائي، ونظافة الفم. اجعل الإجابات موجزة واستخدم التغميق **bolding** للتأكيد على الكلمات المفتاحية.";
+        
+        // This is a single-session chat and does not maintain history, focusing on quick, transactional Q&A.
+        const sendMessage = async (query) => {
+            if (!query.trim()) return;
+
+            addMessage(query, 'user');
+            userInput.value = '';
+            toggleLoading(true);
+
+            const apiKey = ""; // Canvas provides this dynamically
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            // Simplified backoff/retry mechanism
+            const MAX_RETRIES = 3;
+            let attempt = 0;
+
+            while (attempt < MAX_RETRIES) {
+                try {
+                    const payload = {
+                        contents: [{ parts: [{ text: query }] }],
+                        tools: [{ "google_search": {} }],
+                        systemInstruction: {
+                            parts: [{ text: systemInstruction }]
+                        },
+                    };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429 && attempt < MAX_RETRIES - 1) {
+                            const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                            console.warn(`Attempt ${attempt + 1} failed (429). Retrying in ${delay / 1000}s...`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            attempt++;
+                            continue; // Retry loop
+                        }
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        const text = candidate.content.parts[0].text;
+                        addMessage(text, 'ai');
+                    } else {
+                        addMessage('عذراً، حدث خطأ في معالجة الإجابة. يرجى المحاولة مرة أخرى أو الاتصال بالجراح مباشرة.', 'ai');
+                    }
+
+                    break; // Exit loop on success
+
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    attempt++;
+
+                    if (attempt === MAX_RETRIES) {
+                        addMessage('عذراً، فشلت المحاولة النهائية للتواصل مع المساعد الآلي. يرجى التأكد من اتصالك بالإنترنت والاتصال بالجراح مباشرة إذا كان الأمر عاجلاً.', 'ai');
+                    } else {
+                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+            toggleLoading(false);
+        };
+
+
+        // --- QR Code Logic and Event Listeners ---
+        
+        // **--- FINAL UPDATE: USING THE LIVE GITHUB PAGES URL ---**
+        const qrDataToEncode = "https://mishari2003.github.io/Rahty-chatbot-clinic/"; 
+
+        let qrcodeInstance = null;
+
+        const generateQrCode = () => {
+            const qrcodeDiv = document.getElementById('qrcode');
+            if (qrcodeInstance) {
+                qrcodeDiv.innerHTML = ""; 
+            }
+            
+            // Check for the qrcode library before creating instance
+            if (typeof QRCode !== 'undefined') {
+                 qrcodeInstance = new QRCode(qrcodeDiv, {
+                    text: qrDataToEncode,
+                    width: 256,
+                    height: 256,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            } else {
+                console.error("QR Code library not loaded.");
+                // Fallback action if library is missing
+                alert("تعذر إنشاء رمز QR. يرجى التأكد من اتصالك بالإنترنت.");
+            }
+        };
+
+
+        // Event Listeners for UI interaction
+        if (chatForm) {
+            chatForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const query = userInput.value;
+                if (query && !sendButton.disabled) {
+                    sendMessage(query);
+                }
+            });
+        }
+
+        // --- Fixed QR Button Listener ---
+        qrButton.addEventListener('click', () => {
+            // Ensure the modal is visible before generating the code
+            qrModalOverlay.style.display = 'flex';
+            // Generate the code only when the modal is opened
+            generateQrCode(); 
+        });
+
+
+        closeQrModal.addEventListener('click', () => {
+            qrModalOverlay.style.display = 'none';
+        });
+
+        qrModalOverlay.addEventListener('click', (e) => {
+            if (e.target === qrModalOverlay) {
+                qrModalOverlay.style.display = 'none';
+            }
+        });
+
+        // Enable button when input is not empty
+        userInput.addEventListener('input', () => {
+            sendButton.disabled = userInput.value.trim() === '' || !isAuthReady;
+        });
+
+        // Initialize button state when everything is loaded
+        window.addEventListener('load', () => {
+            sendButton.disabled = true; // Disable until auth is ready/input is present
+        });
+
+    </script>
+</body>
+</html>
+
