@@ -1,0 +1,226 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Bot, User, AlertCircle, MapPin, Clock, Phone } from 'lucide-react';
+
+export default function App() {
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: 'أهلاً بك! أنا المساعد الآلي للدكتور مشاري الغامدي، أخصائي جراحة الفم والوجه والفكين. أنا هنا للإجابة على استفساراتك بعد الجراحة وتزويدك بالتعليمات اللازمة. كيف يمكنني مساعدتك اليوم؟',
+      sender: 'bot',
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const messagesEndRef = useRef(null);
+
+  // ---------------------------------------------------------
+  //  إعدادات "عقل" المساعد (System Prompt) - شاملة كل القواعد
+  // ---------------------------------------------------------
+  const SYSTEM_INSTRUCTION = `
+    أنت المساعد الآلي والمساعد الشخصي لعيادة الدكتور مشاري الغامدي.
+    
+    **معلومات الدكتور:**
+    - الاسم: د. مشاري الغامدي.
+    - التخصص: أخصائي (طبيب نائب) جراحة الفم والوجه والفكين.
+    - المؤهلات: مرخص من الهيئة السعودية للتخصصات الصحية.
+
+    **مهمتك:**
+    الإجابة على أسئلة المرضى بعد العمليات الجراحية (Post-op instructions) بناءً على القواعد الصارمة التالية فقط.
+
+    **قواعد وتعليمات العيادة (يجب الالتزام بها حرفياً):**
+
+    1. **حالات الطوارئ والنزيف المستمر:**
+       - إذا ذكر المريض وجود "نزيف مستمر" أو حالة طارئة، انصحه فوراً بالتوجه للطوارئ.
+       - **القاعدة:** زيارة طوارئ مجمع الدمام الطبي فوراً (خاصة بعد الساعة 4 مساءً).
+
+    2. **التواصل وحجز المواعيد:**
+       - لا يمكن الاتصال بالعيادة مباشرة.
+       - لحجز موعد أو للاستفسار، يجب الاتصال بـ **الرقم الموحد لمجمع الدمام الطبي: 920022231**.
+       - إذا لم تصل رسالة بموعد إضافي، يمكن للمريض الاتصال بالرقم الموحد أو مراجعة الاستقبال.
+       - **سؤال: هل عندي موعد آخر؟** الإجابة: "هذا يعتمد إذا كانت حالتك تستدعي مواعيد إضافية، فإن الطبيب سيقوم بحجز موعد لك وستصلك رسالة نصية بالموعد الجديد."
+
+    3. **موقع العيادة:**
+       - يقع قسم جراحة الوجه والفكين بمجمع الدمام الطبي في **الدور السادس - مبنى رقم 2**.
+
+    4. **زراعة الأسنان:**
+       - إذا سأل المريض عن الزراعة: "زراعة الأسنان تحتاج إلى تحويل من مركز الرعاية الصحية الأولية حسب اللوائح المتبعة."
+
+    5. **ألم ما بعد الخلع (التهاب العظم السنخي / Dry Socket):**
+       - إذا اشتكى المريض من ألم شديد في مكان الخلع استمر لمدة 3 أيام، فهذا قد يكون "التهاب العظم السنخي".
+       - **التوجيه:** يرجى مراجعة **عيادة 314 بالدور السادس** ليتم عمل اللازم، أو مراجعة مركز الرعاية الأولية.
+
+    6. **الأسلوب:**
+       - تحدث باللغة العربية دائماً.
+       - كن مهذباً، مطمئناً، واحترافياً.
+       - الإجابات تكون قصيرة ومباشرة.
+
+    7. **تحذير هام:**
+       - لا تقدم تشخيصاً طبياً جديداً من عندك. التزم فقط بالتعليمات المذكورة أعلاه. في الحالات الغريبة، وجه المريض للرقم الموحد أو الطوارئ.
+  `;
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = { id: Date.now(), text: input, sender: 'user' };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${
+          typeof apiKey !== 'undefined' ? apiKey : ''
+        }`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: input }],
+              },
+            ],
+            systemInstruction: {
+              parts: [{ text: SYSTEM_INSTRUCTION }],
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('حدث خطأ في الاتصال بالخادم');
+      }
+
+      const data = await response.json();
+      const botResponseText =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        'عذراً، لم أتمكن من فهم سؤالك. يرجى الاتصال بالرقم الموحد 920022231.';
+
+      const botMessage = {
+        id: Date.now() + 1,
+        text: botResponseText,
+        sender: 'bot',
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.error(err);
+      setError('عذراً، حدث خطأ بسيط. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') handleSend();
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-slate-50 font-sans" dir="rtl">
+      {/* Header */}
+      <header className="bg-teal-700 text-white p-4 shadow-md flex items-center justify-between z-10">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-2 rounded-full">
+            <Bot size={28} />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg md:text-xl">عيادة د. مشاري الغامدي</h1>
+            <p className="text-xs md:text-sm text-teal-100">أخصائي جراحة الفم والوجه والفكين</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Quick Info Cards (Visible on top) */}
+      <div className="bg-white border-b p-2 flex justify-around text-xs text-gray-600 gap-2 overflow-x-auto">
+        <div className="flex items-center gap-1 whitespace-nowrap">
+           <Phone size={14} className="text-teal-600"/>
+           <span>920022231</span>
+        </div>
+        <div className="flex items-center gap-1 whitespace-nowrap">
+           <MapPin size={14} className="text-teal-600"/>
+           <span>مبنى 2 - الدور 6</span>
+        </div>
+        <div className="flex items-center gap-1 whitespace-nowrap">
+           <AlertCircle size={14} className="text-red-500"/>
+           <span>طوارئ بعد 4م</span>
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[85%] md:max-w-[70%] rounded-2xl p-3.5 text-sm md:text-base leading-relaxed shadow-sm ${
+                msg.sender === 'user'
+                  ? 'bg-teal-600 text-white rounded-tl-none'
+                  : 'bg-white text-gray-800 border border-gray-200 rounded-tr-none'
+              }`}
+            >
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-white border border-gray-200 rounded-2xl rounded-tr-none p-3 shadow-sm">
+              <div className="flex gap-1.5">
+                <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce delay-100"></div>
+                <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce delay-200"></div>
+              </div>
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className="text-center text-red-500 text-xs my-2 bg-red-50 p-2 rounded">
+            {error}
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <div className="bg-white p-3 md:p-4 border-t border-gray-200 shadow-lg">
+        <div className="flex gap-2 max-w-4xl mx-auto">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="اكتب سؤالك هنا..."
+            className="flex-1 border border-gray-300 rounded-full px-5 py-3 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-right"
+            disabled={loading}
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+            className="bg-teal-600 text-white p-3 rounded-full hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex-shrink-0"
+          >
+            <Send size={20} className={loading ? 'opacity-0' : ''} />
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-400 text-center mt-2">
+          هذا نظام آلي للمساعدة. في الحالات الطارئة جداً يرجى التوجه للطوارئ فوراً.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
